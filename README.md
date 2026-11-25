@@ -1,58 +1,144 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Aplikasi Manajemen Tugas — Case 3 DKP
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Tugas mata kuliah **Dasar Komputer dan Pemrograman**. Aplikasi web untuk mencatat dan mengelola daftar tugas per pengguna, dibangun dengan **Laravel 13**, **Livewire 4**, **Flux UI**, **Tailwind CSS 4**, dan **Alpine.js**.
 
-## About Laravel
+Fitur utama: autentikasi (login/register) buatan sendiri dengan hashing & auth Laravel, CRUD tugas dengan **soft delete** (tempat sampah + pulihkan + hapus permanen), pencarian, dashboard statistik ber-**cache**, antarmuka responsif, serta job terjadwal untuk membersihkan sampah lama.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+---
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Teknologi
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+| Komponen | Versi |
+|----------|-------|
+| PHP | ^8.3 |
+| Laravel | ^13 |
+| Livewire | ^4 |
+| Flux UI | ^2 |
+| Tailwind CSS | ^4 |
+| Alpine.js | bawaan bundle Livewire/Flux |
+| Vite | ^8 |
 
-## Learning Laravel
+---
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+## Pemenuhan Syarat Tugas
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+### Persyaratan Utama
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
+| # | Syarat | Implementasi |
+|---|--------|--------------|
+| 1 | Login & Register mandiri + Hash & Auth (tanpa template bawaan) | `app/Livewire/Auth/Login.php` (Auth::attempt), `app/Livewire/Auth/Register.php` (Hash::make + Auth::login). Tidak memakai Breeze/Jetstream. |
+| 2 | CRUD + soft delete | `app/Livewire/Tasks.php` (create, read, update, delete, restore, forceDelete) + trait `SoftDeletes` di `app/Models/Task.php`. |
+| 3 | Migration & Seeder | `database/migrations/*`, `database/seeders/DatabaseSeeder.php` & `TaskSeeder.php` (membuat 1 akun demo + 5 tugas). |
+| 4 | UI Tailwind CSS & Flux | `resources/css/app.css` (import Tailwind + Flux) dan komponen `<flux:*>` di seluruh tampilan. |
+| 5 | Port forwarding tanpa merusak layout | Aset di-build (`npm run build`) lalu diakses lewat `php artisan serve --host=0.0.0.0` — lihat bagian *Akses dari HP*. |
+| 6 | Responsif / mobile-friendly | Layout adaptif (`sm:`/`md:`/`lg:`), menu hamburger untuk mobile di `layouts/app.blade.php`. |
+| 7 | Minimal 1 halaman memakai Cache | `app/Livewire/Dashboard.php` menggunakan `Cache::remember(..., 300, ...)` untuk statistik. |
+| 8 | Livewire | Komponen `Dashboard`, `Tasks`, `Auth/Login`, `Auth/Register`. |
+| 9 | Alpine.js | Direktif `x-data`, `x-show`, `x-transition`, `@click.outside` pada layout dan tampilan. |
+| 10 | Job, Queue & Schedule *(opsional)* | Job `PurgeOldTrashedTasks` (`ShouldQueue`) dijadwalkan harian di `routes/console.php`; `QUEUE_CONNECTION=database`. |
 
-## Agentic Development
+### Opsional Khusus Linux/WSL
 
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+| # | Syarat | Status |
+|---|--------|--------|
+| 11 | Laravel Octane | Tidak diterapkan (lingkungan pengembangan Windows) |
+| 12 | Redis | Tidak diterapkan (cache memakai driver `database`) |
 
-```bash
-composer require laravel/boost --dev
+---
 
-php artisan boost:install
+## Struktur Penting
+
+```
+app/
+├── Jobs/PurgeOldTrashedTasks.php   # hapus permanen tugas di sampah > 30 hari (terjadwal)
+├── Livewire/
+│   ├── Auth/Login.php, Register.php
+│   ├── Dashboard.php               # statistik + cache
+│   └── Tasks.php                   # CRUD + soft delete
+└── Models/Task.php                 # SoftDeletes
+database/
+├── migrations/                     # users, cache, jobs, tasks
+└── seeders/TaskSeeder.php          # data awal
+resources/views/
+├── layouts/app.blade.php           # layout utama (nav, dark mode, mobile)
+├── layouts/guest.blade.php         # layout halaman auth
+└── Livewire/…                      # tampilan komponen
+routes/web.php                      # /login /register /dashboard /tasks
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+---
 
-## Contributing
+## Cara Menjalankan
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+Prasyarat: PHP 8.3+, Composer, Node.js.
 
-## Code of Conduct
+```bash
+# 1. Dependensi
+composer install
+npm install
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+# 2. Konfigurasi environment
+cp .env.example .env
+php artisan key:generate
+#   -> sesuaikan DB_CONNECTION / DB_DATABASE di .env
 
-## Security Vulnerabilities
+# 3. Database + data awal
+php artisan migrate --seed
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+# 4. Build aset frontend
+npm run build
 
-## License
+# 5. Jalankan server
+php artisan serve
+```
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+Buka `http://localhost:8000` (otomatis diarahkan ke halaman login).
+
+### Akun Demo
+
+Dibuat oleh seeder:
+
+- **Email:** `mhs@example.com`
+- **Password:** `password`
+
+Atau daftar akun baru lewat halaman **Register**.
+
+---
+
+## Akses dari HP (Port Forwarding)
+
+1. Build aset (jangan pakai `npm run dev` saat demo):
+   ```bash
+   npm run build
+   ```
+2. Jalankan server dengan bind ke semua interface:
+   ```bash
+   php artisan serve --host=0.0.0.0 --port=8000
+   ```
+3. Izinkan PHP di Windows Firewall (jaringan Private).
+4. Dari HP di **Wi-Fi yang sama**, buka `http://<IP-LAN-PC>:8000`.
+   Cek IP LAN: `ipconfig` (IPv4).
+
+> Catatan: `npm run dev` menyuntik `localhost:5173` sehingga aset gagal dimuat di perangkat lain. Gunakan hasil `npm run build` agar tampilan Tailwind tetap utuh.
+
+---
+
+## Job & Scheduler (opsional)
+
+Menghapus permanen tugas yang sudah di tempat sampah lebih dari 30 hari:
+
+```bash
+# proses antrian
+php artisan queue:work
+
+# penjadwal (jalankan tiap menit, atau `php artisan schedule:work` untuk lokal)
+php artisan schedule:work
+```
+
+Jadwal didefinisikan di `routes/console.php` (`Schedule::job(new PurgeOldTrashedTasks)->daily()`).
+
+---
+
+## Lisensi
+
+Dibuat untuk keperluan tugas akademik. Framework Laravel berlisensi [MIT](https://opensource.org/licenses/MIT).
